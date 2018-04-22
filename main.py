@@ -121,7 +121,7 @@ class Trade_pair():
 		index = -1
 		total_depth = 0
 		for i in range(len(self.buys)):
-			total_depth += self.buys[i][1]*self.sells[i][0]
+			total_depth += self.buys[i][1]*self.buys[i][0]
 			if (total_depth >= depth):
 				index = i
 				break
@@ -197,9 +197,11 @@ class Trade_pair():
 		current_doc.add_next_tick_callback(partial(call_update_cds, cds=self.buys_cds, data=steppify(self.buys, self.xrange_perc)))
 		current_doc.add_next_tick_callback(partial(call_update_cds, cds=self.sells_cds, data=steppify(self.sells, self.xrange_perc)))
 		
-		markp = []
-		markl = []
-		markp.append(self.buys[self.find_buy_depth(1)][0])
+		markp = []			# list of prices to mark
+		markl = []			# list of marker lengths. necessary for bokeh's method of drawing.
+		markp.append(self.buys[self.find_buy_depth(1)][0])		# mark the 1btc depth on the buy side
+		markl.append(-1)
+		markp.append(self.sells[self.find_sell_depth(1)][0])	# mark the 1btc depth on the sell side
 		markl.append(-1)
 
 		current_doc.add_next_tick_callback(partial(call_update_cds, cds=self.price_markers, data=dict(price=markp, length=markl)))
