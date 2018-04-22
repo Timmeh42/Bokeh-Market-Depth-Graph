@@ -56,7 +56,6 @@ class Trade_pair():
 		self.log('update')
 		parsed = json.loads(message)
 		if (parsed[0] == 1010):
-			#print("Heartbeat received ", flush=True)
 			return False					# detect heartbeat
 		if (self.prev_update == 0):
 			self.prev_update = parsed[1]-1
@@ -163,10 +162,6 @@ class Trade_pair():
 		self.buys_cds = ColumnDataSource(data=steppify(self.buys, self.xrange_perc))
 		self.sells_cds = ColumnDataSource(data=steppify(self.sells, self.xrange_perc))
 
-		#fil = open('sampledata', 'w')
-		#json.dump([self.buys_cds.data, self.sells_cds.data], fil)
-		#fil.close()
-
 		self.price_markers = ColumnDataSource(data=dict(price=[], length=[]))
 
 		current_doc.add_next_tick_callback(partial(call_update_cds, cds=self.buys_cds, data=steppify(self.buys, self.xrange_perc)))
@@ -194,6 +189,7 @@ class Trade_pair():
 				event["quote_vol"] += float(order[4])
 				event["base_vol"] += float(order[4])*float(order[3])
 				event["type"] = order[2]
+				# Format of poloniex trade updates is as follows
 				# ["t","11450176",0,"0.00006090","0.47294136",1501361564]
 				# trade tradeid  buy quoteprice    quotevol   timestamp
 		self.sells.sort(key=lambda x: x[0])
@@ -204,8 +200,6 @@ class Trade_pair():
 		markp = []
 		markl = []
 		markp.append(self.buys[self.find_buy_depth(1)][0])
-		markl.append(-1)
-		markp.append(markp[0]*0.99)
 		markl.append(-1)
 
 		current_doc.add_next_tick_callback(partial(call_update_cds, cds=self.price_markers, data=dict(price=markp, length=markl)))
@@ -240,22 +234,15 @@ def close_button_click():
 		trade_pair.ws.close()
 
 def steppify(data, price_range=0.5):
-	# no longer actually steppifies; that is handled by the custom glyph now. this just does accumulation and ranging
-
+	'''
+	Takes all buy or sell orders and cumulatively sums them to produce the stepped data needed for the graph.
+	'''
 	prices, amounts = zip(*data)
 	range_min_price, range_max_price = prices[0]*(1-price_range), prices[0]*(1+price_range)
 	prices = [n for n in prices if (n < range_max_price and n > range_min_price)]
 	amounts = [prices[n]*amounts[n] for n in range(len(prices))]		# convert into base currency
 	amounts_cumlulated = [sum(amounts[:n+1]) for n in range(len(amounts))]
-
-	#sprices = [n for pair in zip(prices, prices) for n in pair]
-	#sprices.append(sprices[-1])
-	#samounts = [n for pair in zip(amounts_cumlulated, amounts_cumlulated) for n in pair]
-	#samounts.insert(0, 0)
-	#samounts[-1] = 0
-
 	return dict(prices=prices, amounts=amounts_cumlulated)
-
 
 current_doc = curdoc()
 close_button = Button(label='Close websocket')
